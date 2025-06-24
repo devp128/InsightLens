@@ -1,7 +1,9 @@
 fastapi
 uvicorn
 langchain
+langchain-community
 pymongo
+pymysql
 sqlalchemy
 python-dotenv
 pydantic
