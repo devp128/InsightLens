@@ -11,15 +11,15 @@ app = FastAPI()
 from pydantic_settings import BaseSettings
 import os
 from dotenv import load_dotenv
-load_dotenv()
-class Settings(BaseSettings):
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL")
+# load_dotenv()
+# class Settings(BaseSettings):
+#     FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 
-settings = Settings()
+# settings = Settings()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
