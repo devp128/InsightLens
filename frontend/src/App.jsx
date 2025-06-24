@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import './App.css';
 import { TextField, Button, Box, Typography, CardContent, CircularProgress, Backdrop } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -16,6 +17,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function App() {
+  const isMobile = useMediaQuery('(max-width:600px)');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   const [tab, setTab] = useState(0);
@@ -61,19 +63,19 @@ function App() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7f6' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f4f3', px: 8, py: 2, bgcolor: 'white' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f4f3', px: { xs: 2, sm: 4, md: 8 }, py: { xs: 1, sm: 2 }, bgcolor: 'white' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{ width: 24, height: 24, color: '#121615' }}>
             <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M13.8261 30.5736C16.7203 29.8826 20.2244 29.4783 24 29.4783C27.7756 29.4783 31.2797 29.8826 34.1739 30.5736C36.9144 31.2278 39.9967 32.7669 41.3563 33.8352L24.8486 7.36089C24.4571 6.73303 23.5429 6.73303 23.1514 7.36089L6.64374 33.8352C8.00331 32.7669 11.0856 31.2278 13.8261 30.5736Z" fill="currentColor"></path><path fillRule="evenodd" clipRule="evenodd" d="..." fill="currentColor"></path></svg>
           </Box>
-          <Typography sx={{ color: '#121615', fontWeight: 700, fontSize: 18 }}>InsightLens</Typography>
+          <Typography sx={{ color: '#121615', fontWeight: 700, fontSize: { xs: 14, sm: 18 } }}>InsightLens</Typography>
         </Box>
       </Box>
 
       {/* Main content */}
-      <Box sx={{ px: 20, py: 4, display: 'flex', justifyContent: 'center', minHeight: '70vh' }}>
-        <Box sx={{ width: '100%', maxWidth: 960, bgcolor: 'white', borderRadius: 4, boxShadow: 2, p: 0, display: 'flex', flexDirection: 'column' }}>
-          <CardContent sx={{ px: 0, position: 'relative' }}>
+      <Box sx={{ px: { xs: 1, sm: 2, md: 8, lg: 20 }, py: { xs: 1, sm: 2, md: 4 }, display: 'flex', justifyContent: 'center', minHeight: '70vh' }}>
+        <Box sx={{ width: '100%', maxWidth: 960, bgcolor: 'white', borderRadius: 4, boxShadow: 2, p: 0, display: 'flex', flexDirection: 'column', minWidth: { xs: '100%', sm: 360, md: 600 } }}>
+          <CardContent sx={{ px: { xs: 0, sm: 2, md: 4 }, position: 'relative' }}>
             <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 10, color: '#1976d2', background: 'rgba(255,255,255,0.6)', flexDirection: 'column' }}>
               <CircularProgress color="primary" />
               {longLoading && (
@@ -83,28 +85,39 @@ function App() {
               )}
             </Backdrop>
 
-            <Typography sx={{ fontWeight: 700, fontSize: 28,color: '#121615', textAlign: 'center', pt: 5, pb: 2 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 20, sm: 24, md: 28 }, color: '#121615', textAlign: 'center', pt: { xs: 2, sm: 5 }, pb: 2 }}>
               Ask a question about your business data
             </Typography>
 
             {/* Search bar */}
-            <Box sx={{ px: 4, py: 2 }}>
+            <Box sx={{ px: { xs: 1, sm: 2, md: 4 }, py: { xs: 1, sm: 2 } }}>
               <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#f1f4f3', borderRadius: 2, height: 48 }}>
-                  <Box sx={{ color: '#6a817b', pl: 2 }}>
-                    <SearchIcon fontSize="medium" />
-                  </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: '#f1f4f3', borderRadius: 2, height: { xs: 'auto', sm: 48 }, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 1, sm: 0 }, py: { xs: 1, sm: 0 } }}>
+                  {!isMobile && (
+                    <Box sx={{ color: '#6a817b', pl: 2 }}>
+                      <SearchIcon fontSize="medium" />
+                    </Box>
+                  )}
                   <input
                     placeholder="e.g., What were the total sales last quarter?"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    style={{ border: 'none', outline: 'none', background: 'transparent',color: '#121615', flex: 1, fontSize: 16, padding: '0 12px' }}
+                    style={{ border: 'none', outline: 'none', background: 'transparent', color: '#121615', flex: 1, fontSize: 16, padding: '0 12px', width: '100%' }}
                     onKeyDown={e => { if (e.key === 'Enter') handleSubmit(e); }}
                   />
                   <Button
                     type="submit"
                     variant="contained"
-                    sx={{ bgcolor: '#121615', color: '#fff', height: 40, borderRadius: 2, ml: 1 }}
+                    sx={{
+                      bgcolor: '#121615',
+                      color: '#fff',
+                      height: 40,
+                      borderRadius: 2,
+                      ml: { xs: 0, sm: 1 },
+                      mt: { xs: 1, sm: 0 },
+                      width: { xs: '100%', sm: 'auto' },
+                      minWidth: 40
+                    }}
                     disabled={!query.trim()}
                   >
                     <SearchIcon fontSize="small" />
@@ -114,7 +127,7 @@ function App() {
             </Box>
 
             {/* Quick Query Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', px: 4, py: 2, gap: 2, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'stretch', justifyContent: 'center', px: { xs: 1, sm: 4 }, py: 2, gap: 2, flexWrap: 'wrap' }}>
               <Button variant="contained" sx={{ bgcolor: '#f1f4f3', color: '#121615' }} onClick={() => setQuery('What are the top five portfolios of our wealth members?')}>Quick Query 1</Button>
               <Button variant="contained" sx={{ bgcolor: '#f1f4f3', color: '#121615' }} onClick={() => setQuery('Give me the breakup of portfolio values per relationship manager.')}>Quick Query 2</Button>
             </Box>
@@ -127,7 +140,7 @@ function App() {
             </Box> */}
 
 
-      <Box sx={{ borderBottom: '1px solid #dde3e2', px: 4, pt: 2, display: 'flex', gap: 2 }}>
+      <Box sx={{ borderBottom: '1px solid #dde3e2', px: { xs: 1, sm: 4 }, pt: { xs: 1, sm: 2 }, display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
               {[
                 { label: 'Text', index: 0 },
                 { label: 'Table', index: 1 },
@@ -159,7 +172,7 @@ function App() {
 
 
             {/* Results */}
-            <Box sx={{ minHeight: 80, px: 4, py: 2 }}>
+            <Box sx={{ minHeight: 80, px: { xs: 1, sm: 4 }, py: { xs: 1, sm: 2 } }}>
             {results && tab === 0 && (
   <Typography sx={{ color: '#121615', fontSize: 16 }}>{results.text}</Typography>
 )}
@@ -206,11 +219,11 @@ function App() {
             </Box>
 
             {/* Query History */}
-            <Typography sx={{ fontWeight: 700, fontSize: 18, px: 4, pt: 2 }}>Query History</Typography>
-            <Box sx={{ px: 4, pb: 4 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 15, sm: 18 }, px: { xs: 1, sm: 4 }, pt: 2 }}>Query History</Typography>
+            <Box sx={{ px: { xs: 1, sm: 4 }, pb: 4 }}>
               {history.length === 0 && <Typography>No previous queries yet.</Typography>}
               {history.map((item, i) => (
-                <Box key={i} sx={{ display: 'flex', justifyContent: 'space-between', bgcolor: '#f9f9f9', borderRadius: 2, px: 2, py: 1, mb: 1 }}>
+                <Box key={i} sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', bgcolor: '#f9f9f9', borderRadius: 2, px: 2, py: 1, mb: 1 }}>
                   <Typography sx={{ color: '#121615' }}>{item.query}</Typography>
 
                   <Typography sx={{ color: '#666', fontSize: 12 }}>{item.timestamp}</Typography>
