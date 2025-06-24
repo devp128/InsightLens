@@ -1,0 +1,9 @@
+What are the top five portfolios of our wealth members?
+Give me the breakup of portfolio values per relationship manager.
+Tell me the top relationship managers in my firm
+Which clients are the highest holders of [specific stock]?
+
+Show all portfolios with stock = 'Reliance'.
+Show all portfolios managed by Rajiv Mehra.
+What is the total portfolio value?
+Show portfolios with value greater than 7,000,000
