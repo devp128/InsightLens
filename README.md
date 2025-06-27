@@ -238,16 +238,15 @@ Health check endpoint.
 ## Example Queries
 
 ### Client Profile Queries (MongoDB)
-- "Show me all high risk clients"
-- "Which clients prefer tech investments?"
-- "Find clients over 40 years old"
-- "List clients in Mumbai with medium risk"
+- "Show me the recent transactions for all clients in the last 30 days."
+- "List all clients in Mumbai who prefer tech investments."
+- "Which clients are classified as high risk?"
 
 ### Portfolio Queries (MySQL)
-- "What are the top 5 portfolios by value?"
-- "Show portfolio breakdown by relationship manager"
-- "Which stocks are most popular?"
-- "Calculate total portfolio value per client"
+- "What are the top five portfolios of our wealth members?"
+- "Give me the breakup of portfolio values per relationship manager."
+- "Tell me the top relationship managers in my firm"
+- "Which clients are the highest holders of HDFC?"
 
 ---
 

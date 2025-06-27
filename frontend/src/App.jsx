@@ -219,7 +219,7 @@ function App() {
             </Box>
 
             {/* Query History */}
-            <Typography sx={{ fontWeight: 700, fontSize: { xs: 15, sm: 18 }, px: { xs: 1, sm: 4 }, pt: 2 }}>Query History</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: { xs: 15, sm: 18 }, px: { xs: 1, sm: 4 }, pt: 2, color: '#121615' }}>Query History</Typography>
             <Box sx={{ px: { xs: 1, sm: 4 }, pb: 4 }}>
               {history.length === 0 && <Typography>No previous queries yet.</Typography>}
               {history.map((item, i) => (
