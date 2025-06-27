@@ -42,19 +42,15 @@ A modern, full-stack business intelligence platform that enables users to query 
 ![Main Interface](./assets/main-interface.png)
 *Clean, modern interface with natural language query input and quick query buttons.*
 
-### 2. Text Results
-![Text Results](./assets/text-results.png)
-*Natural language explanations of query results with business context.*
-
-### 3. Table View
+### 2. Table View
 ![Table View](./assets/table-view.png)
 *Structured data presentation with sortable columns and responsive design.*
 
-### 4. Chart Visualization
+### 3. Chart Visualization
 ![Chart View](./assets/chart-view.png)
 *Interactive charts automatically generated from query results.*
 
-### 5. Query History
+### 4. Query History
 ![Query History](./assets/query-history.png)
 *Track and review previous queries with timestamps.*
 
