@@ -3,7 +3,51 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from schemas import QueryRequest, QueryResponse, TableResult, ChartResult
-from langchain_agent.echo_chain import run_echo_chain
+import os
+from langchain_agent.mongo_tool import MongoTool
+from langchain_agent.sql_tool import SQLTool
+from langchain_community.chat_models import ChatOpenAI
+
+from functools import lru_cache
+import re
+
+def clean_llm_output(output):
+    if isinstance(output, dict):
+        return output
+    if "Final Answer:" in output:
+        final = output.split("Final Answer:")[-1].strip()
+        return "Final Answer: " + final
+    output = re.sub(r"Action:.*", "", output)
+    output = re.sub(r"Action Input:.*", "", output)
+    return output.strip()
+
+# Classifier prompt
+CLASSIFIER_PROMPT = """
+You are an expert assistant. Classify the following user question as either 'mongo' (if it is about client profiles, risk, preferences, demographics, etc.) or 'sql' (if it is about portfolios, transactions, stock holdings, values, relationship managers, etc.).
+
+Question: {query}
+
+Respond with only 'mongo' or 'sql'.
+"""
+
+def get_default_llm():
+    # Always use OpenRouter for better SQL generation
+    return ChatOpenAI(
+        model_name="deepseek/deepseek-r1-0528:free",
+        openai_api_key=os.getenv("OPENROUTER_API_KEY"),
+        openai_api_base="https://openrouter.ai/api/v1",
+    )
+
+def classify_query(query: str) -> str:
+    llm = get_default_llm()
+    prompt = CLASSIFIER_PROMPT.format(query=query)
+    result = llm.predict(prompt).strip().lower()
+    if 'mongo' in result:
+        return 'mongo'
+    return 'sql'
+
+mongo_tool = MongoTool()
+sql_tool = SQLTool()
 
 app = FastAPI()
 
@@ -31,145 +75,41 @@ def health():
 
 @app.post("/query", response_model=QueryResponse)
 def query_endpoint(req: QueryRequest):
-    query_text = req.query.lower()
-    # Hardcoded SQL for key business questions
-    def get_hardcoded_sql(question: str):
-        q = question.lower().strip()
-        import re
-        if "top five portfolios" in q or "top 5 portfolios" in q:
-            return "SELECT client_name, portfolio_value FROM portfolios ORDER BY portfolio_value DESC LIMIT 5;"
-        if "breakup of portfolio values per relationship manager" in q:
-            return "SELECT relationship_manager, SUM(portfolio_value) as total_value FROM portfolios GROUP BY relationship_manager ORDER BY total_value DESC;"
-        if "top relationship managers" in q:
-            return "SELECT relationship_manager, SUM(portfolio_value) as total_value FROM portfolios GROUP BY relationship_manager ORDER BY total_value DESC LIMIT 5;"
-        if "highest holders of" in q:
-            match = re.search(r"highest holders of ([\w\s]+)", q)
-            if match:
-                stock = match.group(1).strip().replace("'", "''")
-                return f"SELECT client_name, portfolio_value FROM portfolios WHERE stock = '{stock}' ORDER BY portfolio_value DESC;"
-        return None
-
-    from db.mysql import SessionLocal
-    from sqlalchemy import text
-    session = SessionLocal()
     try:
-        sql_query = get_hardcoded_sql(req.query)
-        if sql_query:
-            try:
-                result = session.execute(text(sql_query))
-                rows = result.fetchall()
-                columns = result.keys()
-                table = TableResult(columns=list(columns), rows=[list(row) for row in rows])
-                # Try to generate a chart if possible
-                chart = None
-                if table and table.columns and table.rows:
-                    # Find first string column and first numeric column
-                    import numbers
-                    str_idx = None
-                    num_idx = None
-                    for i, col in enumerate(table.columns):
-                        # Check first row for type
-                        if len(table.rows) > 0:
-                            val = table.rows[0][i]
-                            try:
-                                float_val = float(val)
-                                if num_idx is None:
-                                    num_idx = i
-                            except (ValueError, TypeError):
-                                if str_idx is None:
-                                    str_idx = i
-                    if str_idx is not None and num_idx is not None:
-                        labels = [str(row[str_idx]) for row in table.rows]
-                        data = [float(row[num_idx]) for row in table.rows]
-                        chart = {
-                            "labels": labels,
-                            "data": data,
-                            "label": table.columns[num_idx]
-                        }
-                return QueryResponse(
-                    text=f"Results for: {req.query}",
-                    table=table,
-                    chart=chart
-                )
-            except Exception as e:
-                # If LLM generates invalid SQL, fallback to echo chain
-                text_resp = run_echo_chain(req.query)
-                return QueryResponse(
-                    text=f"LLM SQL generation failed: {e}\n\n{text_resp}",
-                    table=None,
-                    chart=None
-                )
-            finally:
-                session.close()
+        # Classify the query
+        db_type = classify_query(req.query)
+        print(f"[API] Query classified as: {db_type}")
+        if db_type == 'mongo':
+            print(f"[API] Calling MongoDB tool with query: {req.query}")
+            tool_result = mongo_tool._run(req.query)
         else:
-            try:
-                # Use the improved async SQL generator with timeout and strict schema
-                from langchain_agent.sql_generator import generate_sql_async, get_portfolios_schema
-                import asyncio
-                schema = get_portfolios_schema()
-                sql_query = asyncio.run(generate_sql_async(req.query, schema=schema, timeout=30))
-                if sql_query.lower().startswith("sorry, i cannot answer"):
-                    return QueryResponse(
-                        text=sql_query,
-                        table=None,
-                        chart=None
-                    )
-                if sql_query.lower().startswith("-- sql generation timed out"):
-                    return QueryResponse(
-                        text=sql_query,
-                        table=None,
-                        chart=None
-                    )
-                result = session.execute(text(sql_query))
-                rows = result.fetchall()
-                columns = result.keys()
-                table = TableResult(columns=list(columns), rows=[list(row) for row in rows])
-                # Try to generate a chart if possible
-                chart = None
-                if table and table.columns and table.rows:
-                    # Find first string column and first numeric column
-                    import numbers
-                    str_idx = None
-                    num_idx = None
-                    for i, col in enumerate(table.columns):
-                        # Check first row for type
-                        if len(table.rows) > 0:
-                            val = table.rows[0][i]
-                            try:
-                                float_val = float(val)
-                                if num_idx is None:
-                                    num_idx = i
-                            except (ValueError, TypeError):
-                                if str_idx is None:
-                                    str_idx = i
-                    if str_idx is not None and num_idx is not None:
-                        labels = [str(row[str_idx]) for row in table.rows]
-                        data = [float(row[num_idx]) for row in table.rows]
-                        chart = {
-                            "labels": labels,
-                            "data": data,
-                            "label": table.columns[num_idx]
-                        }
-                return QueryResponse(
-                    text=f"Results for: {req.query}",
-                    table=table,
-                    chart=chart
-                )
-            except Exception as e:
-                # If LLM generates invalid SQL, fallback to echo chain
-                text_resp = run_echo_chain(req.query)
-                return QueryResponse(
-                    text=f"LLM SQL generation failed: {e}\n\n{text_resp}",
-                    table=None,
-                    chart=None
-                )
-            finally:
-                session.close()
+            print(f"[API] Calling SQL tool with query: {req.query}")
+            tool_result = sql_tool._run(req.query)
+        cleaned_result = clean_llm_output(tool_result)
+        if isinstance(cleaned_result, dict):
+            text = cleaned_result.get("text", "No answer available.")
+            table = {
+                "columns": cleaned_result.get("columns", []),
+                "rows": cleaned_result.get("rows", [])
+            } if ("columns" in cleaned_result and "rows" in cleaned_result) else {"columns": [], "rows": []}
+            chart = cleaned_result.get("chart", None)
+        else:
+            text = str(cleaned_result)
+            table = {"columns": [], "rows": []}
+            chart = None
+        return {
+            "text": text or "No answer available.",
+            "table": table if table else {"columns": [], "rows": []},
+            "chart": chart if chart else None
+        }
     except Exception as e:
-        # Fallback to LLM echo/analysis
-        text_resp = run_echo_chain(req.query)
-        return QueryResponse(
-            text=f"An error occurred: {e}\n\n{text_resp}",
-            table=None,
-            chart=None
-        )
+        import traceback
+        print(f"[API] Error: {e}")
+        print(f"[API] Error type: {type(e)}")
+        print(f"[API] Full traceback:")
+        traceback.print_exc()
+        return {
+            "text": f"Sorry, I couldn't process your question. Please try rephrasing or ask about client profiles or portfolios. (Error: {e})",
+            "table": {"columns": [], "rows": []},
+            "chart": None
+        }
